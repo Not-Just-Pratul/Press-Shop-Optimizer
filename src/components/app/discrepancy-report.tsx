@@ -19,9 +19,18 @@ interface DiscrepancyReportDisplayProps {
 }
 
 export function DiscrepancyReportDisplay({ report }: DiscrepancyReportDisplayProps) {
-    if (!report || report.discrepancies.length === 0) {
+    if (!report) {
         return null;
     }
+
+    const filteredDiscrepancies = report.discrepancies.filter(
+        d => d.severity === 'Medium' || d.severity === 'High'
+    );
+
+    if (filteredDiscrepancies.length === 0) {
+        return null;
+    }
+
 
     const getSeverityVariant = (severity: 'Low' | 'Medium' | 'High'): "default" | "secondary" | "destructive" => {
         switch (severity) {
@@ -60,7 +69,7 @@ export function DiscrepancyReportDisplay({ report }: DiscrepancyReportDisplayPro
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {report.discrepancies.map((item, index) => (
+                            {filteredDiscrepancies.map((item, index) => (
                                 <TableRow key={index}>
                                     <TableCell className="font-medium">{item.partName}</TableCell>
                                     <TableCell className="hidden sm:table-cell min-w-[150px]">{item.operationName}</TableCell>
