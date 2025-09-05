@@ -229,21 +229,52 @@ export function PlannerControls({
                                       </SelectContent>
                                   </Select>
                               </div>
-                              <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-9 w-9 shrink-0 hover:bg-destructive/10 group hidden sm:inline-flex"
-                                  onClick={() => handleRemoveConstraint(constraint.id)}
-                              >
-                                  <X className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                              </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 shrink-0 hover:bg-destructive/10 group hidden sm:inline-flex"
+                                        >
+                                            <X className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will remove the constraint for machine "{constraint.machineName || 'unset'}".
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleRemoveConstraint(constraint.id)}>Remove</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                           </div>
                       ))}
-                      <Button type="button" variant="outline" size="sm" onClick={handleAddConstraint}>
-                          <PlusCircle className="mr-2 h-4 w-4"/>
-                          Add Constraint
-                      </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button type="button" variant="outline" size="sm">
+                                    <PlusCircle className="mr-2 h-4 w-4"/>
+                                    Add Constraint
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Add Constraint</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to add a new machine constraint?
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleAddConstraint}>Add</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                   </CardContent>
               </Card>
           </div>
