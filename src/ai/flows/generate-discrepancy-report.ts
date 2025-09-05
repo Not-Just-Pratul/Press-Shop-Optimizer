@@ -73,7 +73,7 @@ An inefficiency occurs when a production operation is assigned to a machine with
 3.  **Compare Ideal vs. Actual:**
     -   The 'lowestPress' value from the part spec is the **ideal machine**.
     -   The 'machineName' in the schedule item is the **actual machine**.
-4.  **Identify Discrepancy:** A discrepancy exists if the capacity of the 'actual machine' is greater than the capacity of the 'ideal machine'.
+4.  **Identify Discrepancy:** A discrepancy exists **ONLY IF** the capacity of the 'actual machine' is **strictly greater than** the capacity of the 'ideal machine'. If the capacities are equal, it is NOT a discrepancy.
     -   To do this, you must look up the capacity of both machine names in the 'Machine Specifications' data.
 5.  **Create Discrepancy Record:** For each discrepancy found, create an object with the following details:
     -   \`partName\`, \`operationName\`
