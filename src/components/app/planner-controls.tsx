@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -10,7 +9,6 @@ import type { Machine, ProductionPlan, PlanInsights, DiscrepancyReport } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Separator } from "../ui/separator";
 import { PlanDisplay } from "./plan-display";
 import { DiscrepancyReportDisplay } from "./discrepancy-report";
 import { calculateDuration } from "@/lib/utils";
@@ -344,7 +342,7 @@ export function PlannerControls({
         </div>
       </form>
       
-      {(isGeneratingPlan || plan) && <Separator className="my-8" />}
+      {(isGeneratingPlan || plan) && <div className="my-8 border-t" />}
 
       <div className="space-y-8">
         <PlanDisplay
@@ -360,5 +358,3 @@ export function PlannerControls({
     </div>
   );
 }
-
-    

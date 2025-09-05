@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { DiscrepancyReport } from "@/lib/types";
@@ -78,7 +77,7 @@ export function DiscrepancyReportDisplay({ report }: DiscrepancyReportDisplayPro
                                             <Badge variant="outline" className="w-full sm:w-auto justify-center">{item.idealMachineName} ({item.idealMachineCapacity}T)</Badge>
                                             <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
                                             <ArrowDown className="h-4 w-4 text-muted-foreground shrink-0 sm:hidden" />
-                                            <Badge className="w-full sm:w-auto justify-center">{item.actualMachineName} ({item.actualMachineCapacity}T)</Badge>
+                                            <Badge className="w-full smw-auto justify-center">{item.actualMachineName} ({item.actualMachineCapacity}T)</Badge>
                                         </div>
                                     </TableCell>
                                     <TableCell className="hidden lg:table-cell">
