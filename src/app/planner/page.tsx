@@ -147,7 +147,7 @@ export default function PlannerPage() {
     async (options: { 
         duration: number;
         startTime: string;
-        constraints: Array<{ machineName: string; time: number }> 
+        constraints: Array<{ machineName: string; startTime: number, endTime: number }> 
     }) => {
       setIsLoading(true);
       setPlan(null);

@@ -18,12 +18,13 @@ import { calculateDuration } from "@/lib/utils";
 interface Constraint {
     id: string;
     machineName: string;
-    time: string;
+    startTime: string;
+    endTime: string;
 }
 
 interface PlannerControlsProps {
   machines: Machine[];
-  onGeneratePlan: (options: { duration?: number; startTime?: string; constraints?: Array<{ machineName: string; time: number }>, replanTime?: string }) => void;
+  onGeneratePlan: (options: { duration?: number; startTime?: string; constraints?: Array<{ machineName: string; startTime: number; endTime: number }>, replanTime?: string }) => void;
   onResetPlan: () => void;
   isGeneratingPlan: boolean;
   isAdjustingPlan?: boolean;
@@ -67,7 +68,7 @@ export function PlannerControls({
     const today = new Date().toISOString().split('T')[0];
     const startDateTime = new Date(`${today}T${startTime}:00`);
 
-    for (let i = 30; i <= duration; i += 30) {
+    for (let i = 0; i <= duration; i += 30) {
         const slotDate = new Date(startDateTime.getTime() + i * 60000);
         slots.push(slotDate.toTimeString().substring(0, 5));
     }
@@ -75,15 +76,25 @@ export function PlannerControls({
   }, [startTime, endTime]);
   
   const handleAddConstraint = () => {
-    setConstraints([...constraints, { id: crypto.randomUUID(), machineName: "", time: "" }]);
+    setConstraints([...constraints, { id: crypto.randomUUID(), machineName: "", startTime: "", endTime: "" }]);
   };
 
   const handleRemoveConstraint = (id: string) => {
     setConstraints(constraints.filter(c => c.id !== id));
   };
   
-  const handleConstraintChange = (id: string, field: 'machineName' | 'time', value: string) => {
-      setConstraints(constraints.map(c => c.id === id ? { ...c, [field]: value } : c));
+  const handleConstraintChange = (id: string, field: 'machineName' | 'startTime' | 'endTime', value: string) => {
+      setConstraints(constraints.map(c => {
+          if (c.id === id) {
+              const newConstraint = { ...c, [field]: value };
+              // if startTime changes, reset endTime if it's no longer valid
+              if (field === 'startTime' && newConstraint.endTime && newConstraint.endTime < value) {
+                  newConstraint.endTime = "";
+              }
+              return newConstraint;
+          }
+          return c;
+      }));
   };
 
 
@@ -99,9 +110,10 @@ export function PlannerControls({
     const processedConstraints = constraints
         .map(c => ({
             machineName: c.machineName,
-            time: calculateDuration(startTime, c.time)
+            startTime: calculateDuration(startTime, c.startTime),
+            endTime: calculateDuration(startTime, c.endTime),
         }))
-        .filter(c => c.machineName && c.time > 0);
+        .filter(c => c.machineName && c.startTime >= 0 && c.endTime > c.startTime);
     
     const options = {
         duration,
@@ -110,7 +122,7 @@ export function PlannerControls({
     };
 
     if (duration > 0) {
-        onGeneratePlan(options);
+        onGeneratePlan(options as any);
     }
   };
   
@@ -186,15 +198,17 @@ export function PlannerControls({
                   <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
                           <ZapOff className="h-4 w-4" />
-                          Optional: Free Up Machines
+                          Optional: Machine Unavailability
                       </CardTitle>
                       <CardDescription>
-                          Specify machines that must become available by a certain time. The planner will not schedule new tasks on them after this time.
+                          Block out specific time slots for machines. The planner will not schedule any tasks during these times.
                       </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                      {constraints.map((constraint, index) => (
-                          <div key={constraint.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                      {constraints.map((constraint, index) => {
+                        const availableEndTimeSlots = timeSlots.filter(slot => slot > constraint.startTime);
+                        return (
+                          <div key={constraint.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto] gap-2 items-end">
                               <div>
                                   {index === 0 && <Label htmlFor={`free-up-machine-${constraint.id}`}>Machine</Label>}
                                   <Select 
@@ -213,14 +227,14 @@ export function PlannerControls({
                                   </Select>
                               </div>
                               <div>
-                                  {index === 0 && <Label htmlFor={`free-up-time-${constraint.id}`}>Free By</Label>}
+                                  {index === 0 && <Label htmlFor={`free-from-time-${constraint.id}`}>Free From</Label>}
                                   <Select 
-                                      value={constraint.time} 
-                                      onValueChange={(value) => handleConstraintChange(constraint.id, 'time', value)} 
+                                      value={constraint.startTime} 
+                                      onValueChange={(value) => handleConstraintChange(constraint.id, 'startTime', value)} 
                                       disabled={!constraint.machineName}
                                   >
-                                      <SelectTrigger id={`free-up-time-${constraint.id}`}>
-                                          <SelectValue placeholder="Select time" />
+                                      <SelectTrigger id={`free-from-time-${constraint.id}`}>
+                                          <SelectValue placeholder="Start time" />
                                       </SelectTrigger>
                                       <SelectContent>
                                           {timeSlots.map(slot => (
@@ -229,32 +243,50 @@ export function PlannerControls({
                                       </SelectContent>
                                   </Select>
                               </div>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-9 w-9 shrink-0 hover:bg-destructive/10 group hidden sm:inline-flex"
-                                        >
-                                            <X className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will remove the constraint for machine "{constraint.machineName || 'unset'}".
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleRemoveConstraint(constraint.id)}>Remove</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                               <div>
+                                  {index === 0 && <Label htmlFor={`free-to-time-${constraint.id}`}>Free To</Label>}
+                                  <Select 
+                                      value={constraint.endTime} 
+                                      onValueChange={(value) => handleConstraintChange(constraint.id, 'endTime', value)} 
+                                      disabled={!constraint.startTime}
+                                  >
+                                      <SelectTrigger id={`free-to-time-${constraint.id}`}>
+                                          <SelectValue placeholder="End time" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          {availableEndTimeSlots.map(slot => (
+                                              <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0 hover:bg-destructive/10 group sm:inline-flex"
+                                    >
+                                        <X className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will remove the constraint for machine "{constraint.machineName || 'unset'}".
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleRemoveConstraint(constraint.id)}>Remove</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                           </div>
-                      ))}
+                        )
+                      })}
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button type="button" variant="outline" size="sm">
