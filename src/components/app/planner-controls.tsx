@@ -61,7 +61,7 @@ export function PlannerControls({
 
 
   const timeSlots = useMemo(() => {
-    const slots = [];
+    const slots: { value: string, label: string }[] = [];
     const duration = calculateDuration(startTime, endTime);
     if (duration <= 0) return [];
 
@@ -70,7 +70,10 @@ export function PlannerControls({
 
     for (let i = 0; i <= duration; i += 30) {
         const slotDate = new Date(startDateTime.getTime() + i * 60000);
-        slots.push(slotDate.toTimeString().substring(0, 5));
+        slots.push({
+            value: slotDate.toTimeString().substring(0, 5),
+            label: slotDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        });
     }
     return slots;
   }, [startTime, endTime]);
@@ -206,7 +209,7 @@ export function PlannerControls({
                   </CardHeader>
                   <CardContent className="space-y-4">
                       {constraints.map((constraint, index) => {
-                        const availableEndTimeSlots = timeSlots.filter(slot => slot > constraint.startTime);
+                        const availableEndTimeSlots = timeSlots.filter(slot => slot.value > constraint.startTime);
                         return (
                           <div key={constraint.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto] gap-2 items-end">
                               <div>
@@ -238,7 +241,7 @@ export function PlannerControls({
                                       </SelectTrigger>
                                       <SelectContent>
                                           {timeSlots.map(slot => (
-                                              <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                              <SelectItem key={slot.value} value={slot.value}>{slot.label}</SelectItem>
                                           ))}
                                       </SelectContent>
                                   </Select>
@@ -255,7 +258,7 @@ export function PlannerControls({
                                       </SelectTrigger>
                                       <SelectContent>
                                           {availableEndTimeSlots.map(slot => (
-                                              <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                              <SelectItem key={slot.value} value={slot.value}>{slot.label}</SelectItem>
                                           ))}
                                       </SelectContent>
                                   </Select>
@@ -357,3 +360,5 @@ export function PlannerControls({
     </div>
   );
 }
+
+    
