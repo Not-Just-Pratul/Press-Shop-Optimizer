@@ -80,6 +80,9 @@ function SortablePartItem({
     const masterOp = part.operations[opIndex];
     return part.selectedOperations.some(op => op.stepName === masterOp.stepName);
   };
+  
+  // For the Data Entry page, only show unique press types (e.g., "Press-50T", not "Press-50T-2")
+  const uniquePressTypes = machines.filter(m => !/-\d+$/.test(m.machineName));
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -204,7 +207,7 @@ function SortablePartItem({
                                                 <SelectValue placeholder="Select press" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {machines.map(m => (
+                                                {uniquePressTypes.map(m => (
                                                     <SelectItem key={m.id} value={m.machineName}>{m.machineName}</SelectItem>
                                                 ))}
                                             </SelectContent>
