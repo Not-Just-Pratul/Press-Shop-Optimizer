@@ -76,7 +76,7 @@ export function PlanDisplay({ plan, insights, isLoading, machines, shiftDuration
       <CardContent>
         <Tabs defaultValue="gantt">
           <TabsList className="grid w-full grid-cols-1 md:grid-cols-2">
-            <TabsTrigger value="gantt"><GanttChartSquare className="mr-2 h-4 w-4" />Gantt Chart</TabsTrigger>
+            <TabsTrigger value="gantt"><GanttChartSquare className="mr-2 h-4 w-4" />Task Grid</TabsTrigger>
             <TabsTrigger value="dashboard"><BarChart2 className="mr-2 h-4 w-4"/>Dashboard</TabsTrigger>
           </TabsList>
           <TabsContent value="gantt" className="mt-4">
@@ -292,24 +292,6 @@ function PlanActions({ plan, insights, shiftDuration, allMachines, formatTime }:
 function GanttChart({ plan, machines, shiftDuration, formatTime }: { plan: ProductionPlan, machines: Machine[], shiftDuration: number, formatTime: (minutes: number) => string }) {
     const { productionPlan } = plan;
 
-    const breakDuration = 30;
-    const breakStartTime = (shiftDuration / 2) - (breakDuration / 2);
-    const breakEndTime = breakStartTime + breakDuration;
-
-    const lastTaskEndTime = useMemo(() => {
-        return productionPlan.reduce((max, item) => Math.max(max, item.endTime), 0);
-    }, [productionPlan]);
- 
-    const totalDuration = useMemo(() => Math.max(lastTaskEndTime, shiftDuration), [lastTaskEndTime, shiftDuration]);
-
-    const timeIntervals = useMemo(() => {
-        const intervals = [];
-        for (let i = 0; i < totalDuration; i += 30) {
-            intervals.push(i);
-        }
-        return intervals;
-    }, [totalDuration]);
-    
     const getPartColor = (partName: string, taskType: 'Die Setting' | 'Production') => {
         let hash = 0;
         for (let i = 0; i < partName.length; i++) {
@@ -318,101 +300,73 @@ function GanttChart({ plan, machines, shiftDuration, formatTime }: { plan: Produ
         const hue = Math.abs(hash % 360);
         
         if (taskType === 'Die Setting') {
-        return {
-            background: `hsl(${hue}, 40%, 92%)`,
-            border: `hsl(${hue}, 30%, 85%)`,
-            pattern: 'repeating-linear-gradient(45deg, transparent, transparent 5px, hsla(0, 0%, 0%, 0.03) 5px, hsla(0, 0%, 0%, 0.03) 10px)'
-        };
+            return {
+                background: `hsl(${hue}, 40%, 92%)`,
+                border: `hsl(${hue}, 30%, 85%)`,
+                pattern: 'repeating-linear-gradient(45deg, transparent, transparent 5px, hsla(0, 0%, 0%, 0.03) 5px, hsla(0, 0%, 0%, 0.03) 10px)'
+            };
         }
 
         return {
-        background: `hsl(${hue}, 80%, 90%)`,
-        border: `hsl(${hue}, 60%, 80%)`,
-        pattern: 'none'
+            background: `hsl(${hue}, 80%, 90%)`,
+            border: `hsl(${hue}, 60%, 80%)`,
+            pattern: 'none'
         };
     };
 
     return (
-        <div id="gantt-chart-container" className="overflow-x-auto relative border rounded-lg bg-card">
-          <Table className="min-w-full border-collapse">
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="sticky left-0 bg-muted/50 z-20 w-32 sm:w-40 min-w-[128px] sm:min-w-[160px] font-semibold">Machine</TableHead>
-                {timeIntervals.map((intervalStart, index) => {
-                  const widthPercentage = (30 / totalDuration) * 100;
-                  return (
-                    <TableHead key={index} className="text-center text-xs sm:text-sm p-0" style={{ width: `${widthPercentage}%` }}>
-                        <div className="border-l h-full py-2 px-1 truncate" style={{minWidth: '100px'}}>
-                         {formatTime(intervalStart)}
-                        </div>
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {machines.map((machine, index) => (
-                <TableRow key={`${machine.machineName}-${index}`} className="h-32">
-                  <TableCell className="font-semibold sticky left-0 bg-card z-10 w-32 sm:w-40 min-w-[128px] sm:min-w-[160px] border-r">
-                    {machine.machineName}
-                  </TableCell>
-                  <TableCell colSpan={timeIntervals.length} className="p-0 align-top">
-                    <div className="relative h-32 w-full">
-                       {/* Break overlay */}
-                        <div
-                            className="absolute top-0 h-full bg-muted/70 z-10 flex items-center justify-center"
-                            style={{
-                                left: `${(breakStartTime / totalDuration) * 100}%`,
-                                width: `${(breakDuration / totalDuration) * 100}%`,
-                            }}
-                        >
-                            <div className="flex items-center gap-2 text-muted-foreground -rotate-90 text-sm font-medium">
-                                <Utensils className="h-4 w-4"/>
-                                <span>Break</span>
-                            </div>
-                        </div>
+        <div className="border rounded-lg bg-card overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableHead className="sticky left-0 bg-muted/50 z-10 w-40 min-w-[160px] font-semibold">Machine</TableHead>
+                        <TableHead>Tasks</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {machines.map((machine, index) => (
+                        <TableRow key={`${machine.machineName}-${index}`} className="h-36">
+                            <TableCell className="font-semibold sticky left-0 bg-card z-10 w-40 min-w-[160px] border-r align-top">
+                                {machine.machineName}
+                            </TableCell>
+                            <TableCell className="p-2 align-top">
+                                <div className="flex flex-wrap gap-2">
+                                    {productionPlan
+                                        .filter(item => item.machineName === machine.machineName)
+                                        .sort((a,b) => a.startTime - b.startTime)
+                                        .map((item, itemIndex) => {
+                                            const colors = getPartColor(item.partName, item.taskType);
+                                            const uniqueKey = `${item.machineName}-${item.partName}-${item.operationName}-${item.startTime}-${itemIndex}`;
 
-                       {productionPlan
-                        .filter(item => item.machineName === machine.machineName)
-                        .map((item, itemIndex) => {
-                          const left = (item.startTime / totalDuration) * 100;
-                          const width = Math.max(0.5, ((item.endTime - item.startTime) / totalDuration) * 100);
-                          const colors = getPartColor(item.partName, item.taskType);
-                          
-                          const uniqueKey = `${item.machineName}-${item.partName}-${item.operationName}-${item.startTime}-${itemIndex}`;
-
-                          return (
-                            <div
-                              key={uniqueKey}
-                              className="absolute top-1 h-[7.5rem] rounded-md p-2 shadow-sm border transition-all duration-300 animate-in fade-in z-20 text-xs break-words min-w-16"
-                              style={{
-                                left: `calc(${left}% + 2px)`,
-                                width: `calc(${width}% - 4px)`,
-                                backgroundColor: colors.background,
-                                borderColor: colors.border,
-                                backgroundImage: colors.pattern,
-                              }}
-                            >
-                               <p className="font-bold break-words">{item.partName}</p>
-                               <p className="text-muted-foreground break-words">
-                                {item.taskType === 'Die Setting' ? 'Die Setting' : item.operationName}
-                               </p>
-                               
-                               <div className="space-y-1 mt-1">
-                                {item.taskType === 'Production' && (
-                                    <p className="font-mono text-primary">Qty: {item.quantity}</p>
-                                )}
-                                 <p className="text-muted-foreground">{`${formatTime(item.startTime)} - ${formatTime(item.endTime)}`}</p>
-                               </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                                            return (
+                                                <div
+                                                    key={uniqueKey}
+                                                    className="w-48 h-32 rounded-md p-2 shadow-sm border text-xs"
+                                                    style={{
+                                                        backgroundColor: colors.background,
+                                                        borderColor: colors.border,
+                                                        backgroundImage: colors.pattern,
+                                                    }}
+                                                >
+                                                    <p className="font-bold break-words">{item.partName}</p>
+                                                    <p className="text-muted-foreground break-words">
+                                                        {item.taskType === 'Die Setting' ? 'Die Setting' : item.operationName}
+                                                    </p>
+                                                    <div className="space-y-1 mt-1">
+                                                        {item.taskType === 'Production' && (
+                                                            <p className="font-mono text-primary">Qty: {item.quantity}</p>
+                                                        )}
+                                                        <p className="text-muted-foreground">{`${formatTime(item.startTime)} - ${formatTime(item.endTime)}`}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
     );
 }
@@ -554,3 +508,4 @@ function PlanDisplaySkeleton() {
   );
 }
 
+    
